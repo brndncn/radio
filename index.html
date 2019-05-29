@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+	<head>
+		<title>radio</title>
+		<script src="/static/jquery-3.4.1.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+	<script>
+const FLY_SPEED = 0.02;
+const BASELINE_OFFSET = -10;
+const BUFFER_TIMEOUT = 500;
+// "punctuation" referring to punctuation that frees a word when typed
+const PUNCTUATION = ['.', ',', ';', ':', ' ', '!', '?'];
+
+const socket = io();
+
+var canvas;
+var ctx;
+
+var fragments = [];
+var other_buffers = [];
+
+var x_spawn = 0;
+var my_buffer = '';
+var last_keystroke_timestamp = null;
+
+socket.on('fragment', function(fragment) {
+	fragments.push(fragment);
+	other_buffers = other_buffers.filter((b) => b.id !== fragment.id);
+});
+
+socket.on('buffer', function(buffer) {
+	other_buffers = other_buffers.filter((b) => b.id !== buffer.id);
+	if (buffer.b !== '') other_buffers.push(buffer);
+});
+
+$(document).keydown(function(event) {
+	if (event.key === 'Backspace') {
+		// TODO mark event as used
+		my_buffer = my_buffer.substring(0, my_buffer.length - 1)
+		update_buffer();
+	}
+	last_keystroke_timestamp = performance.now();
+});
+
+$(document).keypress(function(event) {
+	let is_punctuation = false;
+	for (let i = 0; i < PUNCTUATION.length; i++) {
+		if (event.key === PUNCTUATION[i]) {
+			is_punctuation = true;
+			break;
+		}
+	}
+	if (is_punctuation || event.key === 'Enter') {
+		if (is_punctuation) my_buffer += event.key;
+		post_buffer();
+		if (event.key === 'Enter') x_spawn = 0;
+	} else if (event.key.length == 1) {
+		let width = ctx.measureText(my_buffer + event.key).width;
+		if (x_spawn + width >= canvas.width) {
+			if (x_spawn > 0) x_spawn = 0;
+			else post_buffer();
+		}
+		my_buffer += event.key;
+		update_buffer();
+	}
+	last_keystroke_timestamp = performance.now();
+});
+
+function update_buffer() {
+	socket.emit('buffer', {id: socket.id, b: my_buffer, x: x_spawn});
+}
+
+function post_buffer() {
+	let width = ctx.measureText(my_buffer).width;
+	if (x_spawn + width >= canvas.width) x_spawn = 0;
+
+	let fragment = {id: socket.id, c: my_buffer, x: x_spawn, y: canvas.height + BASELINE_OFFSET};
+	fragments.push(fragment);
+	socket.emit('fragment', fragment);
+
+	my_buffer = '';
+	x_spawn += width;
+
+}
+
+// TODO this could possibly be optimized with some kind of scheduling mechanism?
+function check_buffer_timeout(timestamp) {
+	if (my_buffer !== '' && timestamp - last_keystroke_timestamp >= BUFFER_TIMEOUT) {
+		post_buffer();
+	}
+}
+
+var last_timestamp = null;
+function draw(timestamp) {
+	// let delta = 0 if this is the first frame
+	let delta = last_timestamp ? timestamp - last_timestamp : 0;
+	last_timestamp = timestamp;
+
+	// clear
+	ctx.fillStyle = '#FFFFFF';
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+	ctx.fillStyle = '#000000';
+
+	fragments = fragments.filter((fragment) => fragment.y >= BASELINE_OFFSET);
+
+	for (let i = 0; i < fragments.length; i++) {
+		let c = fragments[i];
+		ctx.fillText(c.c, c.x, c.y);
+		c.y -= FLY_SPEED * delta;
+	}
+
+	ctx.fillText(my_buffer, x_spawn, canvas.height + BASELINE_OFFSET);
+
+	for (let i = 0; i < other_buffers.length; i++) {
+		let b = other_buffers[i];
+		ctx.fillText(b.b, b.x, canvas.height + BASELINE_OFFSET);
+	}
+
+	check_buffer_timeout(timestamp);
+
+	window.requestAnimationFrame(draw);
+}
+
+$(function() {
+	canvas = $('#c')[0];
+	ctx = canvas.getContext('2d');
+	ctx.font = '24px monospace';
+	window.requestAnimationFrame(draw);
+});
+	</script>
+	</head>
+	<body>
+		<canvas id=c width=720 height=480/>	
+	</body>
+</html>
