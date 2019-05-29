@@ -24,6 +24,7 @@ var my_buffer = '';
 var last_keystroke_timestamp = null;
 
 socket.on('fragment', function(fragment) {
+	fragment.age = 0;
 	fragments.push(fragment);
 	other_buffers = other_buffers.filter((b) => b.id !== fragment.id);
 });
@@ -73,14 +74,14 @@ $(document).keypress(function(event) {
 });
 
 function update_buffer() {
-	socket.emit('buffer', {id: socket.id, b: my_buffer, x: x_spawn});
+	socket.emit('buffer', {id: socket.id, b: my_buffer});
 }
 
 function post_buffer() {
 	let width = ctx.measureText(my_buffer).width;
 	if (x_spawn + width >= canvas.width) x_spawn = 0;
 
-	let fragment = {id: socket.id, c: my_buffer, x: x_spawn, y: canvas.height + BASELINE_OFFSET};
+	let fragment = {id: socket.id, c: my_buffer, x: x_spawn, age: 0};
 	fragments.push(fragment);
 	socket.emit('fragment', fragment);
 
@@ -108,12 +109,13 @@ function draw(timestamp) {
 
 	ctx.fillStyle = '#000000';
 
-	fragments = fragments.filter((fragment) => fragment.y >= BASELINE_OFFSET);
+	fragments = fragments.filter((fragment) => fragment.age <= canvas.height / FLY_SPEED); // TODO replace with more robust calculation
 
 	for (let i = 0; i < fragments.length; i++) {
 		let c = fragments[i];
-		ctx.fillText(c.c, c.x, c.y);
-		c.y -= FLY_SPEED * delta;
+		let y = canvas.height + BASELINE_OFFSET - FLY_SPEED * c.age;
+		ctx.fillText(c.c, c.x, y);
+		c.age += delta;
 	}
 
 	ctx.fillText(my_buffer, x_spawn, canvas.height + BASELINE_OFFSET);
