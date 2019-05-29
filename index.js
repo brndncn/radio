@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 4000;
 
 app.use('/static', express.static(path.join(__dirname, 'static')))
 
-app.get('/:room', function(req, res) {
+app.get('/', function(req, res) {
 	res.sendFile(path.join(__dirname, '/index.html'));
 });
 
