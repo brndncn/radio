@@ -38,17 +38,14 @@ $(document).keydown(function(event) {
 		// TODO mark event as used
 		my_buffer = my_buffer.substring(0, my_buffer.length - 1)
 		update_buffer();
-		event.stopPropagation();
-		event.preventDefault();
 	}
 	last_keystroke_timestamp = performance.now();
+
+	event.stopPropagation();
+	event.preventDefault();
 });
 
 $(document).keypress(function(event) {
-	if (event.key === 'Backspace') {
-		event.stopPropagation();
-		event.preventDefault();
-	}
 	let is_punctuation = false;
 	for (let i = 0; i < PUNCTUATION.length; i++) {
 		if (event.key === PUNCTUATION[i]) {
@@ -70,6 +67,9 @@ $(document).keypress(function(event) {
 		update_buffer();
 	}
 	last_keystroke_timestamp = performance.now();
+
+	event.stopPropagation();
+	event.preventDefault();
 });
 
 function update_buffer() {
