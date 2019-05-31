@@ -19,7 +19,7 @@ class Fragment {
 	}
 
 	get y() {
-		return Math.linlin(1 - (this.age / MAX_LIFE) ** 1.2, 0, 1, canvas.height / 2, canvas.height + BASELINE_OFFSET);
+		return Math.linlin(1 - (this.age / MAX_LIFE) ** 1.2, 0, 1, 0, canvas.height + BASELINE_OFFSET);
 	}
 
 	get color() {
@@ -41,6 +41,8 @@ var ctx;
 
 var fragments = [];
 var other_buffers = [];
+
+var glitches = [];
 
 var x_spawn = 0;
 var my_buffer = '';
@@ -144,6 +146,34 @@ function draw(timestamp) {
 	for (let i = 0; i < other_buffers.length; i++) {
 		let b = other_buffers[i];
 		ctx.fillText(b.b, b.x, canvas.height + BASELINE_OFFSET);
+	}
+
+	// TODO: make glitches scheduled and persistent
+
+	// glitch effects A
+	while (Math.random() < 0.05) {
+		let h = Math.floor(Math.random() * 19) + 1;
+		let y_a = Math.floor(Math.random() * (canvas.height - h));
+		let y_b = Math.floor(Math.random() * (canvas.height - h));
+
+		let data_a = ctx.getImageData(0, y_a, canvas.width, h);
+		let data_b = ctx.getImageData(0, y_b, canvas.width, h);
+
+		ctx.putImageData(data_a, 0, y_b);
+		ctx.putImageData(data_b, 0, y_a);
+	}
+
+	// glitch effects B
+	while (Math.random() < 0.05) {
+		let h = Math.floor(Math.random() * 19) + 1;
+		let y = Math.floor(Math.random() * (canvas.height - h));
+		let x_delta = Math.floor(Math.random() * (canvas.width - 1));
+
+		let data_a = ctx.getImageData(0, y, x_delta, h);
+		let data_b = ctx.getImageData(x_delta, y, canvas.width - x_delta, h);
+
+		ctx.putImageData(data_a, x_delta, y);
+		ctx.putImageData(data_b, 0, y);
 	}
 
 	check_buffer_timeout(timestamp);
