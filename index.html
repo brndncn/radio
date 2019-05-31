@@ -167,7 +167,7 @@ function draw(timestamp) {
 	while (Math.random() < 0.05) {
 		let h = Math.floor(Math.random() * 19) + 1;
 		let y = Math.floor(Math.random() * (canvas.height - h));
-		let x_delta = Math.floor(Math.random() * (canvas.width - 1));
+		let x_delta = Math.floor(Math.random() * (canvas.width - 2)) + 1;
 
 		let data_a = ctx.getImageData(0, y, x_delta, h);
 		let data_b = ctx.getImageData(x_delta, y, canvas.width - x_delta, h);
