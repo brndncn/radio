@@ -5,10 +5,32 @@
 		<script src="/static/jquery-3.4.1.min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 	<script>
-const FLY_SPEED = 0.02;
+
+Math.linlin = (x, smin, smax, dmin, dmax) => (x - smin) * (dmax - dmin) / (smax - smin) + dmin;
+
 const BASELINE_OFFSET = -10;
+
+class Fragment {
+	constructor(id, c, x) {
+		this.age = 0;
+		this.id = id;
+		this.c = c;
+		this.x = x;
+	}
+
+	get y() {
+		return Math.linlin(1 - (this.age / MAX_LIFE) ** 1.2, 0, 1, canvas.height / 2, canvas.height + BASELINE_OFFSET);
+	}
+
+	get color() {
+		if (this.age <= 7000) return 'rgb(0,0,0)';
+		return 'rgba(0, 0, 0,' + Math.linlin(this.age, 7000, 9000, 1, 0) + ')'; 
+	}
+
+}
+
 const BUFFER_TIMEOUT = 500;
-const MAX_LIFE = 24000; // TODO automatically calculate
+const MAX_LIFE = 9000;
 // "punctuation" referring to punctuation that frees a word when typed
 const PUNCTUATION = ['.', ',', ';', ':', ' ', '!', '?'];
 
@@ -25,7 +47,7 @@ var my_buffer = '';
 var last_keystroke_timestamp = null;
 
 socket.on('fragment', function(fragment) {
-	fragments.push(fragment);
+	fragments.push(Object.assign(new Fragment, fragment));
 	other_buffers = other_buffers.filter((b) => b.id !== fragment.id);
 });
 
@@ -80,7 +102,7 @@ function post_buffer() {
 	let width = ctx.measureText(my_buffer).width;
 	if (x_spawn + width >= canvas.width) x_spawn = 0;
 
-	let fragment = {id: socket.id, c: my_buffer, x: x_spawn, age: 0};
+	let fragment = new Fragment(socket.id, my_buffer, x_spawn);
 	fragments.push(fragment);
 	socket.emit('fragment', fragment);
 
@@ -106,16 +128,16 @@ function draw(timestamp) {
 	ctx.fillStyle = '#FFFFFF';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-	ctx.fillStyle = '#000000';
-
 	fragments = fragments.filter((fragment) => fragment.age <= MAX_LIFE);
 
 	for (let i = 0; i < fragments.length; i++) {
 		let c = fragments[i];
-		let y = canvas.height - c.age * FLY_SPEED + BASELINE_OFFSET;
-		ctx.fillText(c.c, c.x, y);
+		ctx.fillStyle = c.color;
+		ctx.fillText(c.c, c.x, c.y);
 		c.age += delta;
 	}
+
+	ctx.fillStyle = '#000000';
 
 	ctx.fillText(my_buffer, x_spawn, canvas.height + BASELINE_OFFSET);
 
