@@ -1,10 +1,10 @@
 <!doctype html>
 <html>
 	<head>
-		<title>radio</title>
+		<title>radione</title>
 		<script src="/static/jquery-3.4.1.min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
-	<script>
+		<script>
 
 Math.linlin = (x, smin, smax, dmin, dmax) => (x - smin) * (dmax - dmin) / (smax - smin) + dmin;
 
@@ -187,7 +187,21 @@ $(function() {
 	ctx.font = '24px monospace';
 	window.requestAnimationFrame(draw);
 });
-	</script>
+		</script>
+		<style>
+html {
+	background-color: #EEEEEE;
+}
+#c {
+	padding-left: 0;
+	padding-right: 0;
+	margin-left: auto;
+	margin-right: auto;
+	width: 720px;
+	height: 480px;
+	display: block;
+}
+		</style>
 	</head>
 	<body>
 		<canvas id=c width=720 height=480/>	
