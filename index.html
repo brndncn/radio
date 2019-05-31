@@ -8,6 +8,7 @@
 const FLY_SPEED = 0.02;
 const BASELINE_OFFSET = -10;
 const BUFFER_TIMEOUT = 500;
+const MAX_LIFE = 24000; // TODO automatically calculate
 // "punctuation" referring to punctuation that frees a word when typed
 const PUNCTUATION = ['.', ',', ';', ':', ' ', '!', '?'];
 
@@ -38,11 +39,10 @@ $(document).keydown(function(event) {
 		// TODO mark event as used
 		my_buffer = my_buffer.substring(0, my_buffer.length - 1)
 		update_buffer();
+		event.stopPropagation();
+		event.preventDefault();
 	}
 	last_keystroke_timestamp = performance.now();
-
-	event.stopPropagation();
-	event.preventDefault();
 });
 
 $(document).keypress(function(event) {
@@ -80,7 +80,7 @@ function post_buffer() {
 	let width = ctx.measureText(my_buffer).width;
 	if (x_spawn + width >= canvas.width) x_spawn = 0;
 
-	let fragment = {id: socket.id, c: my_buffer, x: x_spawn, y: canvas.height + BASELINE_OFFSET};
+	let fragment = {id: socket.id, c: my_buffer, x: x_spawn, age: 0};
 	fragments.push(fragment);
 	socket.emit('fragment', fragment);
 
@@ -108,12 +108,13 @@ function draw(timestamp) {
 
 	ctx.fillStyle = '#000000';
 
-	fragments = fragments.filter((fragment) => fragment.y >= BASELINE_OFFSET);
+	fragments = fragments.filter((fragment) => fragment.age <= MAX_LIFE);
 
 	for (let i = 0; i < fragments.length; i++) {
 		let c = fragments[i];
-		ctx.fillText(c.c, c.x, c.y);
-		c.y -= FLY_SPEED * delta;
+		let y = canvas.height - c.age * FLY_SPEED + BASELINE_OFFSET;
+		ctx.fillText(c.c, c.x, y);
+		c.age += delta;
 	}
 
 	ctx.fillText(my_buffer, x_spawn, canvas.height + BASELINE_OFFSET);
