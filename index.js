@@ -8,7 +8,11 @@ const path = require('path');
 
 const PORT = process.env.PORT || 4000;
 
-app.use('/static', express.static(path.join(__dirname, 'static')))
+app.use('/', express.static(path.join(__dirname, 'static')))
+
+app.get('/about', function(req, res) {
+	res.sendFile(path.join(__dirname, '/about.html'));
+});
 
 app.get('/', function(req, res) {
 	res.sendFile(path.join(__dirname, '/index.html'));
