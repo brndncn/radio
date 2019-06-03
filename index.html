@@ -184,29 +184,37 @@ function draw(timestamp) {
 $(function() {
 	canvas = $('#c')[0];
 	ctx = canvas.getContext('2d');
-	ctx.font = '24px monospace';
+	ctx.font = '26px "Message"';
 	window.requestAnimationFrame(draw);
 });
 		</script>
+		<link rel="stylesheet" href="/static/font/style.css"/>
 		<style>
 html {
 	background-color: #EEEEEE;
 }
-#c {
+#m {
 	padding: 0;
 	margin: auto;
 	width: 720px;
-	height: 480px;
+	height: 584px;
 	display: block;
 	position: absolute;
 	left: 0;
 	right: 0;
 	top: 0;
 	bottom: 0;
+	text-align: center;
+}
+img {
+	margin: 10px;
 }
 		</style>
 	</head>
 	<body>
-		<canvas id=c width=720 height=480/>	
+		<div id=m>
+			<canvas id=c width=720 height=480/></canvas>
+			<img src="/static/radione.svg" alt="Radione" height=32 />
+		</div>
 	</body>
 </html>
