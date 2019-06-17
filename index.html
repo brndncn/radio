@@ -148,32 +148,44 @@ function draw(timestamp) {
 		ctx.fillText(b.b, b.x, canvas.height + BASELINE_OFFSET);
 	}
 
-	// TODO: make glitches scheduled and persistent
-
-	// glitch effects A
-	while (Math.random() < 0.05) {
-		let h = Math.floor(Math.random() * 19) + 1;
-		let y_a = Math.floor(Math.random() * (canvas.height - h));
-		let y_b = Math.floor(Math.random() * (canvas.height - h));
-
-		let data_a = ctx.getImageData(0, y_a, canvas.width, h);
-		let data_b = ctx.getImageData(0, y_b, canvas.width, h);
-
-		ctx.putImageData(data_a, 0, y_b);
-		ctx.putImageData(data_b, 0, y_a);
+	// TODO refactor glitch code
+	// each glitch should be a list of location and buffer pairs
+	// also add more glitches and make them move?
+	for (let i = 0; i < glitches.length; i++) {
+		var glitch = glitches[i];
+		switch (glitch.type) {
+			case 'row_swap':
+				ctx.putImageData(glitch.data_a, 0, glitch.y_b);
+				ctx.putImageData(glitch.data_b, 0, glitch.y_a);
+				break;
+			case 'row_shift':
+				ctx.putImageData(glitch.data_a, glitch.x_delta, glitch.y);
+				ctx.putImageData(glitch.data_b, 0, glitch.y);
+				break;
+		}
+		glitch.life += delta;
 	}
 
-	// glitch effects B
-	while (Math.random() < 0.05) {
-		let h = Math.floor(Math.random() * 19) + 1;
-		let y = Math.floor(Math.random() * (canvas.height - h));
-		let x_delta = Math.floor(Math.random() * (canvas.width - 2)) + 1;
+	glitches = glitches.filter(function(glitch) { return glitch.life < glitch.max_life; });
 
-		let data_a = ctx.getImageData(0, y, x_delta, h);
-		let data_b = ctx.getImageData(x_delta, y, canvas.width - x_delta, h);
-
-		ctx.putImageData(data_a, x_delta, y);
-		ctx.putImageData(data_b, 0, y);
+	if (Math.random() < 0.02) {
+		var glitch = {life: 0, max_life: Math.random() * 50 + 50};
+		if (Math.random() < 0.5) {
+			glitch.type = 'row_shift';
+			glitch.h = Math.floor(Math.random() * 19) + 1;
+			glitch.y = Math.floor(Math.random() * (canvas.height - glitch.h));
+			glitch.x_delta = Math.floor(Math.random() * (canvas.width - 2)) + 1;
+			glitch.data_a = ctx.getImageData(0, glitch.y, glitch.x_delta, glitch.h);
+			glitch.data_b = ctx.getImageData(glitch.x_delta, glitch.y, canvas.width - glitch.x_delta, glitch.h);
+		} else {
+			glitch.type = 'row_swap';
+			glitch.h = Math.floor(Math.random() * 19) + 1;
+			glitch.y_a = Math.floor(Math.random() * (canvas.height - glitch.h));
+			glitch.y_b = Math.floor(Math.random() * (canvas.height - glitch.h));
+			glitch.data_a = ctx.getImageData(0, glitch.y_a, canvas.width, glitch.h);
+			glitch.data_b = ctx.getImageData(0, glitch.y_b, canvas.width, glitch.h);
+		}
+		glitches.push(glitch);
 	}
 
 	check_buffer_timeout(timestamp);
